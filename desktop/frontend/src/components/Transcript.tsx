@@ -443,7 +443,7 @@ export function Transcript({
           const tn = userTurn.get(first.id);
           activeTurn = tn;
           out.push(
-            <UserMessage key={first.id} text={first.text} failed={first.failed} turn={tn} anchorId={questionAnchorId(first.id)} />,
+            <UserMessage key={first.id} text={first.text} failed={first.failed} references={first.references} turn={tn} anchorId={questionAnchorId(first.id)} />,
           );
           continue;
         }
@@ -790,7 +790,7 @@ function WarmTurnItems({
         const tn = userTurnMap.get(it.id);
         activeTurn = tn;
         nodes.push(
-          <UserMessage key={it.id} text={it.text} failed={it.failed} turn={tn} anchorId={questionAnchorId(it.id)} />,
+          <UserMessage key={it.id} text={it.text} failed={it.failed} references={it.references} turn={tn} anchorId={questionAnchorId(it.id)} />,
         );
         break;
       }
