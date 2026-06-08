@@ -5964,7 +5964,7 @@ a[href] {
 .history-content {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(340px, 0.38fr) minmax(0, 0.62fr);
+  grid-template-columns: minmax(300px, 0.32fr) minmax(0, 1fr);
   overflow: hidden;
 }
 .history-list {
@@ -6169,6 +6169,26 @@ a[href] {
   color: var(--fg);
   font: inherit;
   font-size: 13px;
+}
+@media (max-width: 1120px) {
+  .history-modal-backdrop {
+    padding: 16px;
+  }
+  .history-modal,
+  .history-modal--wide {
+    width: calc(100vw - 32px);
+  }
+  .history-content {
+    grid-template-columns: minmax(300px, 0.34fr) minmax(0, 1fr);
+  }
+  .history-preview__head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .history-preview__actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 @media (max-width: 760px) {
   .management-modal-backdrop {
