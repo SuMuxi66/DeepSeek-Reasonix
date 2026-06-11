@@ -1515,6 +1515,18 @@ a[href] {
 .layout--workspace-floating {
   min-width: 0;
 }
+.layout--low-res {
+  grid-template-columns: minmax(0, 1fr);
+}
+.layout--low-res .sidebar {
+  display: none !important;
+}
+.layout--low-res .sidebar-resizer {
+  display: none !important;
+}
+.layout--low-res .chat-pane {
+  grid-column: 1 / -1;
+}
 .layout--workspace-maximized .chat-pane {
   display: none;
 }
@@ -10853,35 +10865,35 @@ a[href] {
     justify-content: center;
   }
 
-  .layout--workspace-floating {
+  .layout--workspace-floating:not(.layout--low-res) {
     grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 
-  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating) {
+  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating):not(.layout--low-res) {
     grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 
-  .layout--workspace-floating .sidebar {
+  .layout--workspace-floating:not(.layout--low-res) .sidebar {
     display: flex;
   }
 
-  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating) .sidebar {
+  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating):not(.layout--low-res) .sidebar {
     display: flex;
   }
 
-  .layout--workspace-floating .sidebar-resizer {
+  .layout--workspace-floating:not(.layout--low-res) .sidebar-resizer {
     display: block;
   }
 
-  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating) .sidebar-resizer {
+  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating):not(.layout--low-res) .sidebar-resizer {
     display: block;
   }
 
-  .layout--workspace-floating .chat-pane {
+  .layout--workspace-floating:not(.layout--low-res) .chat-pane {
     grid-column: 2;
   }
 
-  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating) .chat-pane {
+  .layout:not(.layout--sidebar-collapsed):not(.layout--workspace-floating):not(.layout--low-res) .chat-pane {
     grid-column: 2;
   }
 }
@@ -13385,6 +13397,11 @@ a[href] {
   box-shadow: var(--shadow-2);
   overflow: hidden;
   z-index: var(--z-dock);
+}
+
+.layout--low-res.layout--workspace-floating .workbench-dock {
+  width: min(var(--workspace-width), calc(100% - 24px));
+  max-width: calc(100% - 24px);
 }
 
 .layout--workspace-maximized .workbench-dock {

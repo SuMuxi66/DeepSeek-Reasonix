@@ -90,6 +90,8 @@ const WORKSPACE_RESIZER_WIDTH = 8;
 const WORKSPACE_FLOATING_MARGIN = 12;
 const CHAT_FLOATING_VISIBLE_MIN_WIDTH = 280;
 const WORKSPACE_FLOATING_MIN_WIDTH = 260;
+const LOW_RES_WIDTH_BREAKPOINT = 620;
+const LOW_RES_HEIGHT_BREAKPOINT = 640;
 
 function isThemeMode(value: string): value is Theme {
   return value === "auto" || value === "light" || value === "dark";
@@ -138,6 +140,13 @@ function readViewportWidth(): number {
     return window.innerWidth;
   }
   return 1440;
+}
+
+function readViewportHeight(): number {
+  if (typeof window !== "undefined") {
+    return window.innerHeight;
+  }
+  return 900;
 }
 
 function loadSidebarCollapsed(): boolean {
@@ -460,6 +469,7 @@ export default function App() {
   const [transientOverlayDismissSignal, setTransientOverlayDismissSignal] = useState(0);
   const [desktopPlatform, setDesktopPlatform] = useState<DesktopPlatform>(detectBrowserPlatform);
   const [viewportWidth, setViewportWidth] = useState(readViewportWidth);
+  const [viewportHeight, setViewportHeight] = useState(readViewportHeight);
   const [renamingTopicId, setRenamingTopicId] = useState<string | null>(null);
   const [topicTitleDraft, setTopicTitleDraft] = useState("");
   const [topicExportOpen, setTopicExportOpen] = useState(false);
@@ -478,13 +488,14 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const syncViewportWidth = () => {
+    const syncViewportSize = () => {
       setViewportWidth(window.innerWidth);
+      setViewportHeight(window.innerHeight);
     };
-    syncViewportWidth();
-    window.addEventListener("resize", syncViewportWidth);
+    syncViewportSize();
+    window.addEventListener("resize", syncViewportSize);
     return () => {
-      window.removeEventListener("resize", syncViewportWidth);
+      window.removeEventListener("resize", syncViewportSize);
     };
   }, []);
 
@@ -600,7 +611,8 @@ export default function App() {
   const rightDockDetailActive = rightDockMode === "context" ? contextDetailActive : workspacePreviewActive;
   const preferredWorkspacePanelWidth = rightDockDetailActive ? rightDockPreviewWidth : rightDockTreeWidth;
   const workspacePanelMinWidth = rightDockDetailActive ? RIGHT_DOCK_PREVIEW_MIN_WIDTH : RIGHT_DOCK_TREE_MIN_WIDTH;
-  const sidebarRenderWidth = sidebarCollapsed ? 0 : sidebarWidth;
+  const lowResolutionWindow = viewportWidth <= LOW_RES_WIDTH_BREAKPOINT || viewportHeight <= LOW_RES_HEIGHT_BREAKPOINT;
+  const sidebarRenderWidth = lowResolutionWindow || sidebarCollapsed ? 0 : sidebarWidth;
   const workspacePanelFloating = workspacePanelOpen
     && !workspacePanelMaximized
     && viewportWidth < (sidebarRenderWidth + CHAT_DOCKED_MIN_WIDTH + WORKSPACE_RESIZER_WIDTH + workspacePanelMinWidth);
@@ -1728,6 +1740,7 @@ export default function App() {
         className={[
           "layout",
           sidebarCollapsed ? "layout--sidebar-collapsed" : "",
+          lowResolutionWindow ? "layout--low-res" : "",
           sidebarResizing ? "layout--resizing layout--sidebar-resizing" : "",
           workspacePanelGridOpen ? "layout--workspace-open" : "",
           workspacePanelRenderable && workspacePanelFloating ? "layout--workspace-floating" : "",
