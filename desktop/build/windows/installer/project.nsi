@@ -1,4 +1,4 @@
-Unicode true
+﻿Unicode true
 
 ####
 ## Reasonix per-user NSIS installer.
@@ -21,6 +21,9 @@ Unicode true
 ##      moved the install to a different drive (e.g. D:\Tools\Reasonix); the silent
 ##      auto-updater would re-run with /S into the wrong dir, leaving the old
 ##      install orphaned.
+##   4. Chinese (Simplified) localization for installer UI.
+##   5. Custom options page: desktop shortcut, start menu shortcut, run after install.
+##   6. Pre-install process detection via nsExec (Wails-bundled plugin).
 ##
 ## Everything else mirrors Wails' generated default. Defines below override the
 ## ProjectInfo values that wails_tools.nsh would otherwise populate.
@@ -36,6 +39,8 @@ Unicode true
 ####
 !include "wails_tools.nsh"
 !include "FileFunc.nsh"
+!include "nsDialogs.nsh"
+!include "LogicLib.nsh"
 
 # The version information for this two must consist of 4 parts
 VIProductVersion "${INFO_PRODUCTVERSION}.0"
@@ -59,15 +64,26 @@ ManifestDPIAware true
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 
+## ─── Custom Options Page Variables ────────────────────────────────────────────
+Var CheckboxDesktop
+Var CheckboxStartMenu
+Var CheckboxRunAfterInstall
+Var bCreateDesktop
+Var bCreateStartMenu
+Var bRunAfterInstall
+
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
 # !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
+Page custom fnc_Options_Show fnc_Options_Leave # Custom options page
 !insertmacro MUI_PAGE_DIRECTORY # In which folder install page.
 !insertmacro MUI_PAGE_INSTFILES # Installing page.
 !insertmacro MUI_PAGE_FINISH # Finished installation page.
 
-!insertmacro MUI_UNPAGE_INSTFILES # Uinstalling page
+!insertmacro MUI_UNPAGE_INSTFILES # Uninstalling page
 
-!insertmacro MUI_LANGUAGE "English" # Set the Language of the installer
+## ─── Languages (Chinese first for Chinese users, English as fallback) ────────
+!insertmacro MUI_LANGUAGE "SimpChinese"
+!insertmacro MUI_LANGUAGE "English"
 
 ## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
 #!uninstfinalize 'signtool --file "%1"'
@@ -111,25 +127,99 @@ ShowInstDetails show # This will always show the installation details.
     DeleteRegKey HKCU "${UNINST_KEY}"
 !macroend
 
-Function .onInit
-   !insertmacro wails.checkArchitecture
+####
+## Pre-install process detection via nsExec (Wails-bundled NSIS plugin).
+## Uses tasklist (Windows built-in) - no third-party NSIS plugins required.
+####
+Function CheckRunningProcess
+    nsExec::ExecToStack 'tasklist /FI "IMAGENAME eq reasonix-desktop.exe" /NH'
+    Pop $0  ; exit code: 0 = found, 1 = not found
+    Pop $1  ; stdout output
+    ${If} $0 == 0
+        ; Process found - warn the user
+        MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(MSG_RUNNING_PROCESS)" IDOK proceed IDCANCEL abort
+        proceed:
+            ; User chose to continue - proceed with install (files may be locked)
+            Return
+        abort:
+            ; User chose to abort - quit installer
+            Quit
+    ${EndIf}
+FunctionEnd
 
-   ; InstallDirRegKey leaves $INSTDIR empty when the InstallLocation value is
-   ; missing. Older installers still wrote DisplayIcon, so use its parent folder
-   ; as a compatibility bridge before falling back to the per-user default.
-   StrCmp $INSTDIR "" 0 done
-   ClearErrors
-   ReadRegStr $0 HKCU "${UNINST_KEY}" "DisplayIcon"
-   IfErrors fallback
-   StrCmp $0 "" fallback
-   ${GetParent} "$0" $INSTDIR
-   StrCmp $INSTDIR "" fallback done
+####
+## .onInit: Architecture check + path recovery + default options + process detection.
+####
+Function .onInit
+    !insertmacro wails.checkArchitecture
+
+    ; ─── Initialize option defaults (for silent /S mode) ──────────────────
+    ; Non-silent: user can customize on the Options page.
+    ; Silent (auto-updater): create shortcuts for consistency, do NOT launch.
+    StrCpy $bCreateDesktop ${BST_CHECKED}
+    StrCpy $bCreateStartMenu ${BST_CHECKED}
+    StrCpy $bRunAfterInstall ${BST_CHECKED}
+    ${If} ${Silent}
+        StrCpy $bRunAfterInstall 0
+    ${EndIf}
+
+    ; ─── Path recovery (unchanged from original) ─────────────────────────
+    ; InstallDirRegKey leaves $INSTDIR empty when the InstallLocation value is
+    ; missing. Older installers still wrote DisplayIcon, so use its parent folder
+    ; as a compatibility bridge before falling back to the per-user default.
+    StrCmp $INSTDIR "" 0 checkRunning
+    ClearErrors
+    ReadRegStr $0 HKCU "${UNINST_KEY}" "DisplayIcon"
+    IfErrors fallback
+    StrCmp $0 "" fallback
+    ${GetParent} "$0" $INSTDIR
+    StrCmp $INSTDIR "" fallback checkRunning
 
 fallback:
-   StrCpy $INSTDIR "${REASONIX_DEFAULT_INSTALLDIR}"
+    StrCpy $INSTDIR "${REASONIX_DEFAULT_INSTALLDIR}"
+
+checkRunning:
+    ; Check if reasonix-desktop.exe is running (skip in silent mode for auto-updater)
+    ${IfNot} ${Silent}
+        Call CheckRunningProcess
+    ${EndIf}
 done:
 FunctionEnd
 
+####
+## Custom Options Page: desktop shortcut, start menu shortcut, run after install.
+####
+Function fnc_Options_Show
+    nsDialogs::Create 1018
+    Pop $0
+
+    ${NSD_CreateLabel} 0 0 100% 20u "$(MSG_OPTIONS_TITLE)"
+    Pop $0
+
+    ${NSD_CreateCheckbox} 0 30u 100% 15u "$(MSG_OPTIONS_DESKTOP)"
+    Pop $CheckboxDesktop
+    ${NSD_Check} $CheckboxDesktop  ; Default checked
+
+    ${NSD_CreateCheckbox} 0 50u 100% 15u "$(MSG_OPTIONS_STARTMENU)"
+    Pop $CheckboxStartMenu
+    ${NSD_Check} $CheckboxStartMenu  ; Default checked
+
+    ${NSD_CreateCheckbox} 0 80u 100% 15u "$(MSG_OPTIONS_RUNAFTER)"
+    Pop $CheckboxRunAfterInstall
+    ${NSD_Check} $CheckboxRunAfterInstall  ; Default checked
+
+    nsDialogs::Show
+FunctionEnd
+
+Function fnc_Options_Leave
+    ${NSD_GetState} $CheckboxDesktop $bCreateDesktop
+    ${NSD_GetState} $CheckboxStartMenu $bCreateStartMenu
+    ${NSD_GetState} $CheckboxRunAfterInstall $bRunAfterInstall
+FunctionEnd
+
+####
+## Install Section
+####
 Section
     !insertmacro wails.setShellContext
 
@@ -139,15 +229,29 @@ Section
 
     !insertmacro wails.files
 
-    CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
-    CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    ; Create shortcuts based on user options
+    ${If} $bCreateStartMenu == ${BST_CHECKED}
+        CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    ${EndIf}
+
+    ${If} $bCreateDesktop == ${BST_CHECKED}
+        CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    ${EndIf}
 
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
 
     !insertmacro reasonix.writeUninstaller
+
+    ; Run after install if selected (launches during INSTFILES page, before Finish)
+    ${If} $bRunAfterInstall == ${BST_CHECKED}
+        Exec '"$INSTDIR\${PRODUCT_EXECUTABLE}"'
+    ${EndIf}
 SectionEnd
 
+####
+## Uninstall Section
+####
 Section "uninstall"
     !insertmacro wails.setShellContext
 
@@ -163,3 +267,39 @@ Section "uninstall"
 
     !insertmacro reasonix.deleteUninstaller
 SectionEnd
+
+####
+## Localization strings (SimpChinese + English)
+####
+
+; ─── Chinese (Simplified) ─────────────────────────────────────────────────────
+LangString MSG_RUNNING_PROCESS ${LANG_SIMPCHINESE} \
+    "检测到 Reasonix 正在运行。$\r$\n$\r$\n请先关闭 Reasonix 再继续安装，否则部分文件可能无法更新。$\r$\n$\r$\n点击「确定」继续安装，点击「取消」退出安装程序。"
+
+LangString MSG_OPTIONS_TITLE ${LANG_SIMPCHINESE} \
+    "安装选项"
+
+LangString MSG_OPTIONS_DESKTOP ${LANG_SIMPCHINESE} \
+    "创建桌面快捷方式"
+
+LangString MSG_OPTIONS_STARTMENU ${LANG_SIMPCHINESE} \
+    "创建开始菜单快捷方式"
+
+LangString MSG_OPTIONS_RUNAFTER ${LANG_SIMPCHINESE} \
+    "安装完成后立即运行 Reasonix"
+
+; ─── English ──────────────────────────────────────────────────────────────────
+LangString MSG_RUNNING_PROCESS ${LANG_ENGLISH} \
+    "Reasonix is currently running.$\r$\n$\r$\nPlease close Reasonix before continuing. Otherwise, some files may not be updated.$\r$\n$\r$\nClick OK to continue installation, or Cancel to exit."
+
+LangString MSG_OPTIONS_TITLE ${LANG_ENGLISH} \
+    "Installation Options"
+
+LangString MSG_OPTIONS_DESKTOP ${LANG_ENGLISH} \
+    "Create desktop shortcut"
+
+LangString MSG_OPTIONS_STARTMENU ${LANG_ENGLISH} \
+    "Create Start Menu shortcut"
+
+LangString MSG_OPTIONS_RUNAFTER ${LANG_ENGLISH} \
+    "Launch Reasonix after installation"
