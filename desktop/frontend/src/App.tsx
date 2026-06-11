@@ -13,6 +13,7 @@ import {
   Settings as SettingsIcon,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react";
 import { useToast } from "./lib/toast";
 import { asArray } from "./lib/array";
@@ -87,6 +88,8 @@ const CHAT_MIN_WIDTH = 400;
 const CHAT_DOCKED_MIN_WIDTH = 640;
 const WORKSPACE_RESIZER_WIDTH = 8;
 const WORKSPACE_FLOATING_MARGIN = 12;
+const CHAT_FLOATING_VISIBLE_MIN_WIDTH = 280;
+const WORKSPACE_FLOATING_MIN_WIDTH = 260;
 
 function isThemeMode(value: string): value is Theme {
   return value === "auto" || value === "light" || value === "dark";
@@ -601,11 +604,15 @@ export default function App() {
   const workspacePanelFloating = workspacePanelOpen
     && !workspacePanelMaximized
     && viewportWidth < (sidebarRenderWidth + CHAT_DOCKED_MIN_WIDTH + WORKSPACE_RESIZER_WIDTH + workspacePanelMinWidth);
+  const floatingAvailableWidth = Math.max(
+    WORKSPACE_FLOATING_MIN_WIDTH,
+    viewportWidth - sidebarRenderWidth - WORKSPACE_FLOATING_MARGIN * 2 - CHAT_FLOATING_VISIBLE_MIN_WIDTH,
+  );
   const floatingWorkspacePanelWidth = Math.min(
     preferredWorkspacePanelWidth,
     Math.max(
-      CHAT_MIN_WIDTH,
-      viewportWidth - sidebarRenderWidth - WORKSPACE_FLOATING_MARGIN * 2,
+      WORKSPACE_FLOATING_MIN_WIDTH,
+      floatingAvailableWidth,
     ),
   );
 
@@ -2080,6 +2087,18 @@ export default function App() {
                 <h2>{t("workspace.title")}</h2>
               </div>
               <span className="workbench-dock__head-spacer" />
+              {workspacePanelFloating && (
+                <Tooltip label={t("rightDock.collapse")}>
+                  <button
+                    className="workspace-iconbtn workbench-dock__close"
+                    type="button"
+                    aria-label={t("rightDock.collapse")}
+                    onClick={closeWorkspacePanel}
+                  >
+                    <X size={15} />
+                  </button>
+                </Tooltip>
+              )}
             </div>
             <div className="workbench-dock__tools">
               <div className="workbench-dock__tabs" role="tablist" aria-label={t("rightDock.views")}>
