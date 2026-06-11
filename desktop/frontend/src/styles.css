@@ -1512,6 +1512,9 @@ a[href] {
 .layout--workspace-maximized.layout--sidebar-collapsed {
   grid-template-columns: 0px minmax(0, 1fr);
 }
+.layout--workspace-floating {
+  min-width: 0;
+}
 .layout--workspace-maximized .chat-pane {
   display: none;
 }
@@ -13335,6 +13338,21 @@ a[href] {
   width: 100%;
   max-width: none;
   container-type: inline-size;
+}
+
+.layout--workspace-floating .workbench-dock {
+  position: absolute;
+  top: calc(var(--app-chrome-height) + 8px);
+  right: 12px;
+  bottom: calc(12px + var(--statusbar-height));
+  width: min(var(--workspace-width), calc(100% - var(--sidebar-width) - 24px));
+  max-width: calc(100% - var(--sidebar-width) - 24px);
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  z-index: var(--z-dock);
 }
 
 .layout--workspace-maximized .workbench-dock {

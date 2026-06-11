@@ -86,6 +86,7 @@ const SIDEBAR_VIEWPORT_RATIO = 0.18;
 const CHAT_MIN_WIDTH = 400;
 const CHAT_DOCKED_MIN_WIDTH = 640;
 const WORKSPACE_RESIZER_WIDTH = 8;
+const WORKSPACE_FLOATING_MARGIN = 12;
 
 function isThemeMode(value: string): value is Theme {
   return value === "auto" || value === "light" || value === "dark";
@@ -127,6 +128,13 @@ function defaultSidebarWidth(): number {
 
 function defaultRightDockTreeWidth(): number {
   return RIGHT_DOCK_TREE_DEFAULT_WIDTH;
+}
+
+function readViewportWidth(): number {
+  if (typeof window !== "undefined") {
+    return window.innerWidth;
+  }
+  return 1440;
 }
 
 function loadSidebarCollapsed(): boolean {
@@ -448,6 +456,7 @@ export default function App() {
   const [composerInsertRequest, setComposerInsertRequest] = useState<ComposerInsertRequest | null>(null);
   const [transientOverlayDismissSignal, setTransientOverlayDismissSignal] = useState(0);
   const [desktopPlatform, setDesktopPlatform] = useState<DesktopPlatform>(detectBrowserPlatform);
+  const [viewportWidth, setViewportWidth] = useState(readViewportWidth);
   const [renamingTopicId, setRenamingTopicId] = useState<string | null>(null);
   const [topicTitleDraft, setTopicTitleDraft] = useState("");
   const [topicExportOpen, setTopicExportOpen] = useState(false);
@@ -463,6 +472,18 @@ export default function App() {
 
   // Persist window geometry across launches.
   useWindowStatePersistence();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncViewportWidth = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    syncViewportWidth();
+    window.addEventListener("resize", syncViewportWidth);
+    return () => {
+      window.removeEventListener("resize", syncViewportWidth);
+    };
+  }, []);
 
   const closeTransientOverlays = useCallback(() => {
     setTransientOverlayDismissSignal((signal) => signal + 1);
@@ -576,14 +597,30 @@ export default function App() {
   const rightDockDetailActive = rightDockMode === "context" ? contextDetailActive : workspacePreviewActive;
   const preferredWorkspacePanelWidth = rightDockDetailActive ? rightDockPreviewWidth : rightDockTreeWidth;
   const workspacePanelMinWidth = rightDockDetailActive ? RIGHT_DOCK_PREVIEW_MIN_WIDTH : RIGHT_DOCK_TREE_MIN_WIDTH;
+  const sidebarRenderWidth = sidebarCollapsed ? 0 : sidebarWidth;
+  const workspacePanelFloating = workspacePanelOpen
+    && !workspacePanelMaximized
+    && viewportWidth < (sidebarRenderWidth + CHAT_DOCKED_MIN_WIDTH + WORKSPACE_RESIZER_WIDTH + workspacePanelMinWidth);
+  const floatingWorkspacePanelWidth = Math.min(
+    preferredWorkspacePanelWidth,
+    Math.max(
+      CHAT_MIN_WIDTH,
+      viewportWidth - sidebarRenderWidth - WORKSPACE_FLOATING_MARGIN * 2,
+    ),
+  );
 
   const resolvedWorkspacePanelWidth = workspacePanelOpen && !workspacePanelMaximized
     ? Math.max(workspacePanelMinWidth, preferredWorkspacePanelWidth)
     : preferredWorkspacePanelWidth;
 
-  const workspacePanelRenderable = workspacePanelOpen && (workspacePanelMaximized || resolvedWorkspacePanelWidth > 0);
-  const workspacePanelGridOpen = workspacePanelRenderable && !workspacePanelMaximized;
-  const workspacePanelRenderWidth = workspacePanelMaximized ? preferredWorkspacePanelWidth : resolvedWorkspacePanelWidth;
+  const workspacePanelRenderable = workspacePanelOpen
+    && (workspacePanelMaximized || workspacePanelFloating || resolvedWorkspacePanelWidth > 0);
+  const workspacePanelGridOpen = workspacePanelRenderable && !workspacePanelMaximized && !workspacePanelFloating;
+  const workspacePanelRenderWidth = workspacePanelMaximized
+    ? preferredWorkspacePanelWidth
+    : workspacePanelFloating
+      ? floatingWorkspacePanelWidth
+      : resolvedWorkspacePanelWidth;
   const activeTab = useMemo(
     () => tabMetas.find((tab) => tab.id === activeTabId) ?? tabMetas.find((tab) => tab.active),
     [activeTabId, tabMetas],
@@ -1686,6 +1723,7 @@ export default function App() {
           sidebarCollapsed ? "layout--sidebar-collapsed" : "",
           sidebarResizing ? "layout--resizing layout--sidebar-resizing" : "",
           workspacePanelGridOpen ? "layout--workspace-open" : "",
+          workspacePanelRenderable && workspacePanelFloating ? "layout--workspace-floating" : "",
           workspacePanelOpen && workspacePanelMaximized ? "layout--workspace-maximized" : "",
           workspacePanelResizing ? "layout--resizing layout--workspace-resizing" : "",
         ]
@@ -2033,6 +2071,7 @@ export default function App() {
             className={[
               "workbench-dock",
               `workbench-dock--${rightDockMode}`,
+              workspacePanelFloating ? "workbench-dock--floating" : "",
             ].join(" ")}
             aria-label={t("rightDock.workbench")}
           >
