@@ -60,20 +60,21 @@ ManifestDPIAware true
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
-# !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
+!define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" # 164x314 branding panel
+!define MUI_INSTFILES_BITMAP "resources\banner_instfiles.bmp" # 493x58 progress page banner
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${PRODUCT_EXECUTABLE}" # Option to run Reasonix after install
+!define MUI_FINISHPAGE_RUN_TEXT "$(MSG_OPTIONS_RUNAFTER)"
 
 ## ─── Custom Options Page Variables ────────────────────────────────────────────
 Var CheckboxDesktop
 Var CheckboxStartMenu
-Var CheckboxRunAfterInstall
 Var bCreateDesktop
 Var bCreateStartMenu
-Var bRunAfterInstall
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
-# !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
+!insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # EULA page (matches Stitch reasonix_3 design)
 Page custom fnc_Options_Show fnc_Options_Leave # Custom options page
 !insertmacro MUI_PAGE_DIRECTORY # In which folder install page.
 !insertmacro MUI_PAGE_INSTFILES # Installing page.
@@ -155,13 +156,9 @@ Function .onInit
 
     ; ─── Initialize option defaults (for silent /S mode) ──────────────────
     ; Non-silent: user can customize on the Options page.
-    ; Silent (auto-updater): create shortcuts for consistency, do NOT launch.
+    ; Silent (auto-updater): create shortcuts for consistency.
     StrCpy $bCreateDesktop ${BST_CHECKED}
     StrCpy $bCreateStartMenu ${BST_CHECKED}
-    StrCpy $bRunAfterInstall ${BST_CHECKED}
-    ${If} ${Silent}
-        StrCpy $bRunAfterInstall 0
-    ${EndIf}
 
     ; ─── Path recovery (unchanged from original) ─────────────────────────
     ; InstallDirRegKey leaves $INSTDIR empty when the InstallLocation value is
@@ -200,13 +197,9 @@ Function fnc_Options_Show
     Pop $CheckboxDesktop
     ${NSD_Check} $CheckboxDesktop  ; Default checked
 
-    ${NSD_CreateCheckbox} 0 50u 100% 15u "$(MSG_OPTIONS_STARTMENU)"
+    ${NSD_CreateCheckbox} 0 55u 100% 15u "$(MSG_OPTIONS_STARTMENU)"
     Pop $CheckboxStartMenu
     ${NSD_Check} $CheckboxStartMenu  ; Default checked
-
-    ${NSD_CreateCheckbox} 0 80u 100% 15u "$(MSG_OPTIONS_RUNAFTER)"
-    Pop $CheckboxRunAfterInstall
-    ${NSD_Check} $CheckboxRunAfterInstall  ; Default checked
 
     nsDialogs::Show
 FunctionEnd
@@ -214,7 +207,6 @@ FunctionEnd
 Function fnc_Options_Leave
     ${NSD_GetState} $CheckboxDesktop $bCreateDesktop
     ${NSD_GetState} $CheckboxStartMenu $bCreateStartMenu
-    ${NSD_GetState} $CheckboxRunAfterInstall $bRunAfterInstall
 FunctionEnd
 
 ####
@@ -242,11 +234,6 @@ Section
     !insertmacro wails.associateCustomProtocols
 
     !insertmacro reasonix.writeUninstaller
-
-    ; Run after install if selected (launches during INSTFILES page, before Finish)
-    ${If} $bRunAfterInstall == ${BST_CHECKED}
-        Exec '"$INSTDIR\${PRODUCT_EXECUTABLE}"'
-    ${EndIf}
 SectionEnd
 
 ####

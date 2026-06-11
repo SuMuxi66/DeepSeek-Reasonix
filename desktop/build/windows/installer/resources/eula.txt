@@ -1,0 +1,36 @@
+Reasonix AI Agent - End User License Agreement
+
+IMPORTANT: Please read this End User License Agreement ("Agreement") carefully before installing or using Reasonix AI Agent ("Software").
+
+By installing or using the Software, you agree to be bound by the terms of this Agreement.
+
+1. LICENSE GRANT
+Subject to the terms of this Agreement, Reasonix grants you a non-exclusive, non-transferable, limited license to install and use the Software on a single computer for your personal or internal business use.
+
+2. RESTRICTIONS
+You may not:
+(a) Copy, modify, or distribute the Software or any portion thereof;
+(b) Reverse engineer, disassemble, or decompile the Software;
+(c) Remove any proprietary notices or labels on the Software;
+(d) Use the Software to develop a competing product or service;
+(e) Share your license with third parties.
+
+3. DATA PRIVACY
+The Software may collect usage data to improve product quality. By using the Software, you consent to such data collection as described in our Privacy Policy. API keys and credentials are stored locally on your device and are never transmitted to Reasonix servers.
+
+4. AI-GENERATED CONTENT
+The Software uses artificial intelligence to generate code and text. You are solely responsible for reviewing and validating all AI-generated content before use. Reasonix does not guarantee the accuracy or completeness of AI-generated outputs.
+
+5. DISCLAIMER OF WARRANTIES
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+IN NO EVENT SHALL REASONIX BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATING TO THE SOFTWARE.
+
+7. TERMINATION
+This Agreement is effective until terminated. Reasonix may terminate this Agreement at any time if you fail to comply with any term of this Agreement.
+
+8. GOVERNING LAW
+This Agreement shall be governed by the laws of the jurisdiction in which Reasonix operates.
+
+Copyright 2026 Reasonix Contributors. All rights reserved.
